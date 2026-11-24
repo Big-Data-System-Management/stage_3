@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Indexing Service API
+  version: 1.0.0
+  description: >-
+    Operational API. Provider: indexing-service. Consumers: operators and the validation and benchmark scripts.
+    Neither the front-end nor the other services call it. Every operation is read-only, idempotent and safe to
+    retry. Indexing work is triggered by BookDownloaded and IndexRebuildRequested
+    events (see events.yaml), not by HTTP, so there are no POST /index/update/{book_id} or POST /index/rebuild.
+servers:
+  - url: http://localhost:7002
+tags:
+  - name: operational
+    description: Status queries and health checks, consumed by operators and scripts
+paths:
+  /index/status:
+    get:
+      tags: [operational]
+      summary: Indexing statistics
+      description: >-
+        Counts the published books in MongoDB, so every replica of the service returns the same values.
+        Books that are still being indexed are not counted.
+      responses:
+        '200':
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [books_indexed, index_size_mb]
+                properties:
+                  books_indexed:
+                    type: integer
+                    description: Number of published books
+                  last_update:
+                    type: string
+                    format: date-time
+                    description: Time the last book was published; absent when no book is published. It also changes when a rebuild replaces the index
+                  index_size_mb:
+                    type: number
+                    description: Size of the inverted index documents in MongoDB, before compression
+              example:
+                books_indexed: 27
+                last_update: '2026-11-06T23:07:08.932Z'
+                index_size_mb: 5.708
+  /status:
+    get:
+      tags: [operational]
+      summary: Health check
+      description: Reports that the process is running; it does not check MongoDB or the broker.
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Status'}
+              example: {service: indexing-service, status: running}
+components:
+  schemas:
+    Status:
+      type: object
+      properties:
+        service: {type: string}
+        status: {type: string, example: running}
