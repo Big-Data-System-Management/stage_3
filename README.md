@@ -1,8 +1,10 @@
-# Stage 2 — Service-Oriented Architecture
+# Stage 3 — Distributed Search Cluster
 
 Search Engine Project · Big Data · Grado en Ciencia e Ingeniería de Datos · Universidad de Las Palmas de Gran Canaria
 
-This repository turns the search engine over [Project Gutenberg](https://www.gutenberg.org/) books into cooperating microservices (Java 17, Javalin, Gson, MongoDB, ActiveMQ):
+This repository takes the search engine over [Project Gutenberg](https://www.gutenberg.org/) books built in [Stage 2](https://github.com/Big-Data-System-Management/stage_2) and runs it on a cluster of several machines, with every service replicated across machines. At least two distributed designs are deployed, measured under the same load and under node failures, and compared to choose one for the tested workload.
+
+The starting point is the final Stage 2 system (`main` at `b55b6d2`), a set of cooperating microservices (Java 17, Javalin, Gson, MongoDB, ActiveMQ):
 
 - an **ingestion service** that downloads books and stores them in the datalake,
 - an **indexing service** that extracts their metadata and keeps an inverted index in MongoDB,
@@ -23,25 +25,43 @@ This repository turns the search engine over [Project Gutenberg](https://www.gut
 
 ## Table of contents
 
-1. [Repository layout](#repository-layout)
-2. [Architecture](#architecture)
-3. [Endpoints](#endpoints)
-4. [Requirements](#requirements)
-5. [Build](#build)
-6. [Run](#run)
-7. [Configuration](#configuration)
-8. [Validation](#validation)
-9. [Benchmarks](#benchmarks)
-10. [Sample dataset](#sample-dataset)
-11. [Code documentation](#code-documentation)
-12. [Known limitations](#known-limitations)
+1. [Stage 3 scope and status](#stage-3-scope-and-status)
+2. [Repository layout](#repository-layout)
+3. [Architecture](#architecture)
+4. [Endpoints](#endpoints)
+5. [Requirements](#requirements)
+6. [Build](#build)
+7. [Run](#run)
+8. [Configuration](#configuration)
+9. [Validation](#validation)
+10. [Benchmarks](#benchmarks)
+11. [Sample dataset](#sample-dataset)
+12. [Code documentation](#code-documentation)
+13. [Known limitations](#known-limitations)
+
+---
+
+## Stage 3 scope and status
+
+Work in progress. The code is still the Stage 2 system, and the sections after this one describe it.
+
+| Goal | Status |
+|---|---|
+| At least two instances of ingestion, indexing and search, each on a different machine | To do |
+| Any worker able to ingest, index and search, with its role chosen by configuration | To do |
+| Shared storage, so that a worker on any machine can read every book | To do |
+| Automatic discovery of instances and a gateway that routes searches only to ready instances | To do |
+| At least two distributed designs, each with its own deployment configuration | To do |
+| Comparative benchmark and node-failure tests with data-integrity checks | To do |
+
+Sections still to be added: the compared designs, how to deploy each design on the cluster machines, the experiments and their results, and the link to the demonstration video.
 
 ---
 
 ## Repository layout
 
 ```
-stage_2/
+stage_3/
 ├── pom.xml                  Parent Maven project (Java 17) with the benchmark and integration profiles
 ├── docker-compose.yml       MongoDB 8.3.11 and ActiveMQ 6.2.0
 ├── common/                  Shared code: config, datalake, events and broker client, HTTP, JSON, model, tokenizer
@@ -164,7 +184,7 @@ Runnable requests for every endpoint are in [`api/requests/`](api/requests).
 | Python | Benchmarks and plots only | 3.12, with `python -m pip install -r benchmark/requirements.txt` |
 | Internet | Downloading books, unless `BOOK_SOURCE` points to a folder | - |
 
-Everything was tested and measured on Windows 11. The scripts also have the Linux commands, but Linux has not been tested.
+In Stage 2, everything was tested and measured on Windows 11. The scripts also have the Linux commands, but Linux has not been tested.
 
 ### MongoDB and ActiveMQ with Docker
 
@@ -367,7 +387,7 @@ The source code has no comments by decision of the team. The behaviour is docume
 
 ## Known limitations
 
-- **Docker Desktop on Windows.** It adds about 44 ms to every MongoDB message larger than about 2 KB and slows down the confirmations to ActiveMQ, because of the port forwarding between Windows and its virtual machine. It shows in large searches and in the broker throughput. The report compares those results with a MongoDB and ActiveMQ installed natively.
+- **Docker Desktop on Windows.** It adds about 44 ms to every MongoDB message larger than about 2 KB and slows down the confirmations to ActiveMQ, because of the port forwarding between Windows and its virtual machine. It shows in large searches and in the broker throughput. The Stage 2 report compares those results with a MongoDB and ActiveMQ installed natively.
 - **Start-up order.** On a new broker, events published before a service has subscribed once are dropped, because their queue does not exist yet. Start the services before the feeder.
 - **No ranking.** Results are ordered by `book_id`, not by relevance.
 - **No load balancer.** Each search replica answers on its own port, so the client chooses the replica.
